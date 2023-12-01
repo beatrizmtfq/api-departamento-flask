@@ -1,5 +1,6 @@
-from flask import Blueprint, make_response, jsonify
+from flask import Blueprint, make_response, jsonify, request
 
+from app.database import db_session
 from app.models.departamento import Departamento
 
 
@@ -49,12 +50,54 @@ class DepartamentoController:
 
     @departamento.route('/', methods=["POST"])
     def adicionar_departamento():
-        pass
+        dados = request.get_json()
+
+        novo_departamento = Departamento(
+            nome=dados.get('nome_departamento'),
+            descricao=dados.get('descricao')
+        )
+
+        db_session.add(novo_departamento)
+        db_session.commit()
+
+        resposta = make_response(jsonify({
+            'message' : 'Departamento criado com sucesso',
+            'id_departamento' : novo_departamento.id_departamento
+        }))
+
+        resposta.headers['Content-Type'] = 'application/json'
+
+        return resposta
+
 
     @departamento.route('/<int:id_departamento>', methods=["PUT"])
     def atualizar_departamento(id_departamento):
-        pass
+        dados = request.get_json()
+        departamento = Departamento.query.get(id_departamento)
+
+        if departamento:
+
+            if dados.get('nome_departamento'):
+                departamento.nome_departamento = dados.get('nome_departamento')
+
+            if dados.get('descricao'):
+                departamento.descricao = dados.get('descricao')
+
+            db_session.commit()
+
+            return make_response(jsonify({'message' : 'Departamento atualizado com sucesso'}))
+        else:
+            return make_response(jsonify({'message': 'Departamento não encontrado'}), 404)
+
 
     @departamento.route('/<int:id_departamento>', methods=["DELETE"])
     def excluir_departamento(id_departamento):
-        pass
+        departamento = Departamento.query.get(id_departamento)
+
+        if departamento:
+            db_session.delete(departamento)
+            db_session.commit()
+            return make_response(jsonify({'message' : 'Departamento excluído com sucesso'
+            }))
+        else:
+            return make_response(jsonify({'message': 'Departamento não encontrado'}), 404)
